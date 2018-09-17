@@ -1,0 +1,564 @@
+---
+title: "MATH 530-630: Final Project"
+author: "Momma Bear, Papa Bear, Baby Bear"
+date: "12/4/2017"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+###__Paper__:  
+Przybylski, A. K.. & Weinstein, N. "A Large-Scale Test of the Goldilocks Hypothesis."            *Psychological Science* 28, 204-215 (2017)  
+  
+###__Paper Summary__:    
+In this paper, Pryzbylski and Weinstein explore the potential relationship between digital-screen usage and mental well-being scores, with the goal of being able to empirically quantify what would be considered just the right amount of digital-screen usage - hence, the goldilocks hypothesis.  
+
+Their data set consisted of 120,115 English adolescents who self-reported the criterion variable, mental well-being score, from the Warwick-Edinburgh Mental Well-Being Scale. They further divided their explanatory variable, digital-screen time, into four subtypes: time spent using computers, watching tv and movies, playing videogames, and using smart phones. They additionally separated their data into whether the engagement took place on the weekend or the weekday, and examined the potential effects of this difference in time of engagment during their analysis steps.  
+
+They chose their control and confounding variables to be gender, ethnicity, and economic factors, as these have all been linked to both mental well-being scores and digital-screen time engagement by past research. For ethnicity, they assessed whether their ethnic background corresponded with a minority status. For economic factors, they included whether or not the participant lived in what was considered to be a deprived local-authority district.  
+
+Their results contained evidence that there is a quadractic relationship between mental well-being scores and digital-screen time and that this relationship further varies if the digital-screen time is spent on the weekend or weekday. They concluded by remarking that digital-screen time can be harmless and even beneficial, but only when engaged with in moderation.
+
+#Exploratory Data Analysis Report
+
+###__Discussion of issues unconvered in data quality review__:
+During out data quality review we noted multiple issues with the given data set:  
+
+1. __Values are missing__: On our initial look through of the data, we noticed the presence of a lot of "NA" values. We were not able to find any explicit explanation of these missing values in the materials associated with the paper, but an example of the survey given to the participants to elicit the data points allowed skipping of a few questions. This could be what caused the "NA" values, but nothing is officialy noted. There was also a lack of explanation about what they did with these missing values when analyzing the data. After trying several things, our replicated analyses that excluded these values appeared to match those from the paper.
+
+2. __Units are not specified__: Further exploration of the data suggested that the units used were hours.
+
+3. __Field names are ambiguous__: We were able to figure out what the field names meant with further after a closer look at the data.
+
+4. __Text has been converted to numbers__: The variable in which this occured was not used during our analysis process, but this could be an issue if further analysis of the data was done.
+
+5. __Data were entered by humans__: We were concerened about the units not being specified and wondered about inconsistencies during the data entry process. We were unable to explore this concern further with the information that we were given.
+
+6. __Aggregations were computed on missing values__: Our omission of the missing values during our data exploration and analysis would resolve this issue. 
+
+7. __Results have been p-hacked__: The choices of analyses seemed to be reasonable and not indicative of p-hacking.
+
+###__Descriptive statistics and plots presented in paper__:
+
+######__*Importing, cleaning, and tidying the data*__:
+```{r data initialization, message = FALSE}
+source("01-initialization.R") #import and tidy goldilocks data
+``` 
+
+######__*Figure 1*__: 
+This figure shows the average mental well being score as a function of digital-screen time spent watching TV and movies, playing video games, using computers, and using smartphones with the separation of time spent during the weekend or the weekday. We were only able to replicate their graphs by first omitting the "NA" values from our tidy dataset, and then working with the result data set. Using the dplyr package in R, we grouped the tidy dataset without "NA"s by time (2 levels), and pred(4 levels), with pred denoting the type of activity. We used the summarise function to find the mean of the engagement hours and calculated the error values for a 95% confidence interval. We also chose to create a smaller summary data frame for this plot, to avoid repeatedly plotting the same points during graphing.    
+
+Using ggplot from the ggplot2 package we plotted engagement time vs. mental well-being score grouping the data by time, and used the facet wrap command to create subplots for each activity type. The error bars are also included. From this plot, it is clearly visible that there is no negative monotonic relationship between the mental well-being score and the engagment time.
+
+```{r figure 1}
+fig_1_summary <- gold_no_na %>%
+  group_by(pred, engagement, time) %>%
+  summarise(avg_mwbi = mean(mwbi),
+            error = qt(0.975, df = n()-1)*sd(mwbi)/sqrt(n()))
+levels(fig_1_summary$time) <- c("Weekday", "Weekend")
+levels(fig_1_summary$pred) <- c("Using Computers", "Gaming", "Using Smartphones", "Watching")
+fig_1_summary$pred <- factor(fig_1_summary$pred, levels = c("Watching", "Gaming", "Using Computers", "Using Smartphones"))
+ggplot(fig_1_summary, aes(x = engagement,
+                          y = avg_mwbi,
+                          group = time,
+                          color = time)) +
+  geom_point() +
+  geom_line() +
+  ylim(40, 50) +
+  xlab("Daily Digital-Screen Engagement (hr)") +
+  ylab("Average Mental Well-Being") +
+  facet_wrap(~pred) +
+  geom_errorbar(aes(ymin = avg_mwbi-error, 
+                    ymax = avg_mwbi+error),
+                    width = .25)
+
+```
+
+######__*Figure 2*__: 
+This figure illustrates the relationship between the average digital-screen time and different types of digital activities included in the data and shows the difference in engagement levels for females versus males. Two separate histograms are created for time spent during the weekend or weekday. As with Figure 1, we had to omit the "NA" values in order to replicate the figure from the paper, and again created a smaller summary dataframe to prevent repeated ploted. Using the dplyr package, we grouped by gender, time (weekend or weekday), and pred(type of activity), and calculated the average engagement amount and error bars for a 95% confidence interval.  
+
+From these figures, we can see that female adolescents devoted more time to watching TV and movies, using smartphones, and using computers, during both the weekend and weekday. We can also see that boys adolscents spent more time playing video games than female adolescents reported.
+
+```{r figure 2 graph}
+fig_2_summary <- gold_no_na %>%
+  group_by(male, pred, time) %>%
+  summarise(avg_engagement = mean(engagement),
+            error = qt(0.975, df = n()-1)*sd(engagement)/sqrt(n()))
+fig_2_summary$male <- as.factor(fig_2_summary$male)
+levels(fig_2_summary$male) <- c("Female", "Male")
+levels(fig_2_summary$time) <- c("Weekday", "Weekend")
+levels(fig_2_summary$pred) <- c("Using \nComputers", "Gaming", "Using \nSmartphones", "Watching")
+fig_2_summary$pred <- factor(fig_2_summary$pred, levels = c("Watching", "Gaming", "Using \nComputers", "Using \nSmartphones"))
+ggplot(fig_2_summary, aes(x = pred,
+                          y = avg_engagement,
+                          group = male,
+                          fill = as.factor(male))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~time) +
+  ylab("Daily Digital-Screen Engagement (hr)") +
+  xlab("Activity") +
+  ylim(0, 5) +
+  guides(fill=guide_legend(title=NULL)) +
+  geom_errorbar(aes(ymin = avg_engagement-error,
+                    ymax = avg_engagement+error),
+                    position = position_dodge(0.9),
+                    width = .25)
+
+```
+
+Below is our t-test analysis replication for all four activities - watching, playing, using computers, using smartphones - on both weekday and weekend comparing male and female. 
+
+From the values from the two sample t-test, we can clearly see girls devoted  spending more time using smart phones, watching TV, and using computers. Boys spent more time playing console/video games during both weekdays and weekends (for all, p-value < 2.2e-16)
+
+```{r figure 2 t-tests}
+#Watching TV programs during weekdays for two groups, male and female
+males_watch_we<-filter(gold_no_na, male==1 & pred=="watch" & time=="we")
+females_watch_we<-filter(gold_no_na, male==0 & pred=="watch" & time=="we")
+t.test(males_watch_we$engagement,females_watch_we$engagement, var.equal= TRUE)
+
+#Watching TV programs during weekends for two groups, male and female
+males_watch_wd<-filter(gold_no_na, male==1 & pred=="watch" & time=="wd")
+females_watch_wd<-filter(gold_no_na, male==0 & pred=="watch" & time=="wd")
+t.test(males_watch_wd$engagement,females_watch_wd$engagement, var.equal= TRUE)
+
+#Playing console games during weekdays for two groups, male and female
+males_play_we<-filter(gold_no_na, male==1 & pred=="play"&time=="we")
+females_play_we<-filter(gold_no_na, male==0 & pred=="play"& time=="we")
+t.test(males_play_we$engagement,females_play_we$engagement, var.equal= TRUE)
+
+#Playing console games during weekends for two groups, male and female
+males_play_wd<-filter(gold_no_na, male==1 & pred=="play"&time=="wd")
+females_play_wd<-filter(gold_no_na, male==0 & pred=="play"& time=="wd")
+t.test(males_play_wd$engagement,females_play_wd$engagement, var.equal= TRUE)
+
+#Using Computers during weekdays for two groups, male and female
+males_comp_we<-filter(gold_no_na, male==1 & pred=="comp"&time=="we")
+females_comp_we<-filter(gold_no_na, male==0 & pred=="comp"& time=="we")
+t.test(males_comp_we$engagement,females_comp_we$engagement, var.equal= TRUE)
+
+#Using Computers during weekends for two groups male and female
+
+males_comp_wd<-filter(gold_no_na, male==1 & pred=="comp"&time=="wd")
+females_comp_wd<-filter(gold_no_na, male==0 & pred=="comp"& time=="wd")
+t.test(males_comp_wd$engagement,females_comp_wd$engagement, var.equal= TRUE)
+
+#Using Smartphones during weekdays for two groups male and female
+males_sp_we<-filter(gold_no_na, male==1 & pred=="sp" & time=="we")
+females_sp_we<-filter(gold_no_na, male==0 & pred=="sp"& time=="we")
+t.test(males_sp_we$engagement,females_sp_we$engagement, var.equal= TRUE)
+
+
+#Using Smartphones during weekends for two groups male and female
+males_sp_wd<-filter(gold_no_na, male==1 & pred=="sp" & time=="wd")
+females_sp_wd<-filter(gold_no_na, male==0 & pred=="sp"& time=="wd")
+t.test(males_sp_wd$engagement,females_sp_wd$engagement, var.equal= TRUE)
+```  
+
+
+
+######__*Additional comments*__:
+* They reported the number of total particpants in the final data set to be 120,115, which matches the size of our tidy data set. Of the 120,115 participants, 62,962 of them are female while 57,153 are male.
+
+```{r participant table}
+raw_gold %>%
+  tabyl(male)%>%
+  adorn_totals("row") %>%
+  kable()
+```
+
+* Though we were able to replicated the descriptive statistics, and plots in the paper by excluded all "NA" values, we had concern that this choice could impact our later analyses replication steps. The lack of documentation about how the data set was constructed and then processed is also concerning and could present challenges later on.
+* Though they reported their sample size to be 120,115, since we ended up removing all "NA" values for the analysis section, the amount of data we were working with changed and it also became uneven when divided by type of activity and time of week. The table below shows the size of the data set for each pairing of variables. This mismatch in length could create problems later on, as it already has with our attempt at replicating their pair t-test, and could limit the types of analysis that can be performed.
+
+```{r unequal subset sizes}
+gold_no_na %>%
+  group_by(pred, time) %>%
+  summarise(n = n()) %>%
+  kable()
+```
+
+
+
+#Replication Report:
+
+######__*Table 1*__: 
+*"Results of Models Linking Mental Well-Being to Daily Digital Screen Engagement Without Adjustments for the Control Variables"*  
+In this table, linear and quadratic regression models were run to further examine the relationship between mental well-being scores and weekday and weekend digital-screen usage without the inclusion of the control variables. For each model, they have reported the Estimated Coeffecient as "b" , Standard Error of the Coefficient Estimate as"SE", 95% confidence interval as "95% CI", Variable p-valuea as "p", and Cohen's d as "d".  
+
+To replicate this section, we used "dplyr" package to filter the data based on Daily digital screen engagement activities and the time they spent during weekday or weekend. After filtering we checked for the "mean" of each subset and compared it with values represented in the Graph 2 and they were matched. Then we fitted both linear and quadratic models with 95% confidence intervals. The values for:(b, SE, P) are directly reported from the regression models. The "95% CI" is obtained by using "confit" command. For Cohen's d, because they have not mention what variables are used to calculate the effect size, we explored it based on different variables. Since the effect size is different for each activity at diffrent time of week, and based on the results we got by exploring diffrenet variables, our assumption is that the values are calculated for male and female Daily digital screen engagement time during weekday and weekend separately. We initially calculated cohen's d (M1-M1/ Pooled SE) but later after talking with the instructor we used "tes" function from "compute.es" package to convert t-test values to effect size to replicate this section.  
+
+*Observations:*  
+The Standard Error values are much lower for quadratic models and it suggests  the non linear relationship between the Mental well-being and Daily digital screen engagement time.  
+While our values for our quadratic regression model matched those in the paper relatively closely, we were unable to get the values for our linear regression model to match even after attempting it from multiple different approaches. When taking a closer look at their results, we realized that all of the slope values that they calculated for the linear model were positive, but from figure 1 all four graphs appear to have a negative slope. We think that perhaps they excluded the data from certain participants before performing the linear regression model, but nothing about this is mentioned in the paper. Since we removed the "NA" values from our data set, we chose to include the degrees of freedom for each model.  
+
+```{r table 1}
+list_pred = c("watch", "play", "comp", "sp")
+list_time = c("wd", "we")
+list_pred_name = c("Watching films, TV programs, etc.", 
+                   "Playing games", "Using computers for Internet, e-mail,etc.",
+                   "Using smartphones for socialnetworking, chatting, etc.")
+i = 1
+for(pred_var in list_pred){
+  tbl_1 = matrix(c("", "", "", "", "", "", ""), ncol = 7, byrow = TRUE)
+  colnames(tbl_1) = c("", "b", "SE", "95% CI", "p", "|d|", "df")
+  for (time_var in list_time){
+    #Linear Regression
+    gold_subset <- filter(gold_no_na, time == time_var & pred == pred_var)
+    lm_model <- lm(mwbi ~ engagement, data = gold_subset)
+    tidy_lm <- tidy(lm_model)
+    slope_lm <- round(tidy_lm$estimate[2], digits = 3)
+    std_err_lm <- round(tidy_lm$std.error[2], digits = 3)
+    conf_low_lm <- round(confint(lm_model, level = 0.95)[2], digits = 3)
+    conf_up_lm <- round(confint(lm_model, level = 0.95)[4], digits = 3)
+    conf_int_lm <- paste0("[", conf_low_lm, ", ", conf_up_lm, "]")
+    p_val_lm <- round(tidy_lm$p.value[2], digits = 3)
+    df_lm <- df.residual(lm_model)
+    male_lm<- filter(gold_subset, male==1)
+    female_lm<- filter(gold_subset, male==0)
+    tval<-t.test(male_lm$engagement,female_lm$engagement)
+    tess <- tes(tval$statistic, as.double(n_distinct(male_lm)), as.double(n_distinct(female_lm)), level = 95, cer = 0.2, dig = 2, verbose = FALSE, id=NULL, data=NULL)
+    cohens_lm = tess[4]
+    cohens_lm = abs(cohens_lm$d)
+    cohens_lm = round(cohens_lm, digits = 3)
+    linear_values <- c("Linear", slope_lm, std_err_lm, 
+                       conf_int_lm, p_val_lm, cohens_lm, df_lm)
+    tbl_1 <- rbind(tbl_1, linear_values)
+    
+    
+    #Quadratic Regression
+    gold_subset <- gold_subset %>%
+      mutate(engagement2 = engagement^2)
+    qd_model <- lm(mwbi ~ engagement + engagement2, data = gold_subset)
+    tidy_qd <- tidy(qd_model)
+    slope_qd <- round(tidy_qd$estimate[3], digits = 3)
+    std_err_qd <- round(tidy_qd$std.error[3], digits = 3)
+    conf_low_qd <- round(confint(qd_model, level = 0.95)[3], digits = 3)
+    conf_up_qd <- round(confint(qd_model, level = 0.95)[6], digits = 3)
+    conf_int_qd <- paste0("[", conf_low_qd, ", ", conf_up_qd, "]")
+    p_val_qd <- round(tidy_qd$p.value[3], digits = 3)
+    df_qd <- df.residual(qd_model)
+    male_lm <- gold_subset %>%
+      filter(male ==1) %>% 
+      mutate(engagement_2 = engagement^2)
+    female_lm <- gold_subset %>%
+      filter(male == 0) %>% 
+      mutate(engagement_2 = engagement^2)
+    tval<-t.test(male_lm$engagement_2,female_lm$engagement_2)
+    tess<-tes(tval$statistic, as.double(n_distinct(male_lm)), as.double(n_distinct(female_lm)), level = 95, cer = 0.2, dig = 2,       verbose = FALSE, id=NULL, data=NULL)
+    cohens_qd = tess[4]
+    cohens_qd= abs(cohens_qd$d)
+    quadratic_values <- c("Quadratic", slope_qd, std_err_qd, 
+                          conf_int_qd, p_val_qd, cohens_qd, df_qd)
+    tbl_1 <- rbind(tbl_1, quadratic_values, c("", "", "", "", "", "", ""))
+  }
+  tbl_1 <- tbl_1[-7,]
+  rownames(tbl_1) = c("Weekday", "", "", "Weekend", "", "")
+  print(kable(tbl_1, caption = list_pred_name[i]))
+  i = i + 1
+}
+```
+
+Here is our t-test analysis replication for engagement time versus time of the week (weekend or weekday). From the t-test analysis between the digital screen time and tiem (weekday and weekend), we can see that for all four activities, screen time was longer on weekends than during the weekday.  
+
+```{r table 1 t-tests}
+#watching TV programs during weekdays and weekends  
+weekday_watch<-filter(gold_no_na, pred=="watch" & time=="wd") 
+weekend_watch<-filter(gold_no_na, pred=="watch" & time=="we")
+t.test(weekday_watch$engagement,weekend_watch$engagement, var.equal= TRUE)   
+
+#playing console games during weekdays and weekends  
+weekday_play<-filter(gold_no_na,  pred=="play"&time=="wd") 
+weekend_play<-filter(gold_no_na,  pred=="play"& time=="we")
+t.test(weekday_play$engagement,weekend_play$engagement, var.equal= TRUE)   
+
+#Using Computers during weekdays for two groups male and female  
+weekday_comp<-filter(gold_no_na,  pred=="comp"&time=="wd") 
+weekend_comp<-filter(gold_no_na,  pred=="comp"& time=="we")
+t.test(weekday_comp$engagement,weekend_comp$engagement, var.equal= TRUE)   
+
+#Using Smartphones during weekdays for two groups male and female  
+weekday_sp<-filter(gold_no_na,   pred=="sp" & time=="wd") 
+weekend_sp<-filter(gold_no_na, pred=="sp"& time=="we")
+t.test(weekday_sp$engagement,weekend_sp$engagement, var.equal= TRUE)  
+```
+
+
+######__*Table 2*__:
+*"Results of Models Linking Mental Well-Being to Daily Digital-Screen Engagement With Adjustments for the Control Variables"*  
+This table also examines the relationship between mental well-being scores and digital-screen usage on both the weekend and weekday, but the control variables - gender (male), economic factors (deprivity), and technology access (minority) - were included when calculating both linear and quadratic regression models. 
+
+```{r table 2}
+i=1
+
+for (pred_var in list_pred){
+  tbl_2 = matrix(c("", "", "", "", "", "", ""), ncol = 7, byrow = TRUE)
+  colnames(tbl_2) = c("", "b", "SE", "95% CI", "p", "|d|", "df")
+  for (time_var in list_time){
+    #linear regression
+    gold_subset <- filter(gold_no_na, time == time_var & pred == pred_var)
+    lm_model <- lm(mwbi ~ engagement+male+minority+deprived, data = gold_subset)
+    tidy_lm <- tidy(lm_model)
+    slope_lm <- round(tidy_lm$estimate[2], digits = 3)
+    std_err_lm <- round(tidy_lm$std.error[2], digits = 3)
+    conf_low_lm <- round(confint(lm_model, level = 0.95)[2], digits = 3)
+    conf_up_lm <- round(confint(lm_model, level = 0.95)[4], digits = 3)
+    conf_int_lm <- paste0("[", conf_low_lm, ", ", conf_up_lm, "]")
+    p_val_lm <- round(tidy_lm$p.value[2], digits = 3)
+    df_lm <- df.residual(lm_model)
+    df_lm <- df.residual(lm_model)
+    male_lm<- filter(gold_subset, male==1)
+    female_lm<- filter(gold_subset, male==0)
+    tval<-t.test(male_lm$engagement,female_lm$engagement)
+    tess <- tes(tval$statistic, as.double(n_distinct(male_lm)), as.double(n_distinct(female_lm)), level = 95, cer = 0.2, dig = 2, verbose = FALSE, id=NULL, data=NULL)
+    cohens_lm = tess[4]
+    cohens_lm = abs(cohens_lm$d)
+    cohens_lm = round(cohens_lm, digits = 3)
+    linear_values <- c("Linear", slope_lm, std_err_lm, 
+                       conf_int_lm, p_val_lm, cohens_lm, df_lm)
+    tbl_2 <- rbind(tbl_2, linear_values)
+    
+    #Quadratic Regression
+    gold_subset <- gold_subset %>%
+      mutate(engagement2 = engagement^2,
+             male2 = male^2,
+             minority2 = minority^2,
+             deprived2 = deprived^2)
+    qd_model <- lm(mwbi ~ engagement+engagement2 +
+                     male+male2 + minority+minority2 +
+                     deprived+deprived2, data = gold_subset)
+    tidy_qd <- tidy(qd_model)
+    slope_qd <- round(tidy_qd$estimate[3], digits = 3)
+    std_err_qd <- round(tidy_qd$std.error[3], digits = 3)
+    conf_low_qd <- round(confint(qd_model, level = 0.95)[3], digits = 3)
+    conf_up_qd <- round(confint(qd_model, level = 0.95)[6], digits = 3)
+    conf_int_qd <- paste0("[", conf_low_qd, ", ", conf_up_qd, "]")
+    p_val_qd <- round(tidy_qd$p.value[3], digits = 3)
+    df_qd <- df.residual(qd_model)
+    male_lm <- gold_subset %>%
+      filter(male ==1) %>% 
+      mutate(engagement_2 = engagement^2)
+    female_lm <- gold_subset %>%
+      filter(male == 0) %>% 
+      mutate(engagement_2 = engagement^2)
+    tval<-t.test(male_lm$engagement_2,female_lm$engagement_2)
+    tess<-tes(tval$statistic, as.double(n_distinct(male_lm)), as.double(n_distinct(female_lm)), level = 95, cer = 0.2, dig = 2,       verbose = FALSE, id=NULL, data=NULL)
+    cohens_qd = tess[4]
+    cohens_qd= abs(cohens_qd$d)
+    quadratic_values <- c("Quadratic", slope_qd, std_err_qd, 
+                          conf_int_qd, p_val_qd, cohens_qd, df_qd)
+    tbl_2 <- rbind(tbl_2, quadratic_values, c("", "", "", "", "", "", ""))
+  }
+  tbl_2 <- tbl_2[-7,]
+  rownames(tbl_2) = c("Weekday", "", "", "Weekend", "", "")
+  print(kable(tbl_2, caption = list_pred_name[i]))
+  i = i + 1
+}
+```
+
+
+__Two way ANOVA for Table 2:__  
+Factors: Pred (4 levels) and time (2 levels)
+
+First let's see  how the mean response changes based on the two main effects:
+```{r table 2 anova pt 1}
+aggregate(engagement ~ time, data = gold_no_na, mean)
+aggregate(engagement ~ pred, data = gold_no_na, mean)
+with(gold_no_na, tapply(engagement, list(time, pred), mean))
+```
+
+By looking at the means of the individual factors, we can see that neither of them has any effect on the response variable. But by looking at the interaction, we can see that weekend screen times were higher compared to the weekday screen times spent by the adolescents.
+
+For visualizing interactions we can use interaction.plot. It basically plots the means we just examined and connects them with lines. The first argument, is the variable we want on the x-axis. The second variable, is how we want to group the lines it draws. The third argument, response, is our response variable. From the resulting plot, we can tell the slopes are not parallel at the end.
+
+A common method for analyzing the effect of categorical variables on a continuous response variable is the Analysis of Variance, or ANOVA. We can fit a linear model to these data using the lm function. By looking at the table of coefficients, we can tell everything is significant. This just means the coefficients are significantly different from 0.
+
+Running an ANOVA on these data reveals a significant interaction, as we expected, but we also notice the main effects are significant as well. This just means the effects of time and pred individually explain a fair amount of variability in the data. 
+
+From the ANOVA results, we can conclude the following, based on the p-values and a significance level of 0.05:
+
+* The p-value of pred is < 2e-16  (significant), which indicates that the levels of pred are associated with significant different engagement time.
+* The p-value of time is < 2e-16 (significant), which indicates that the levels of time are associated with significant different engagement time.
+* The p-value for the interaction between pred*time is < 2e-16  (significant), which indicates that the relationships between pred and engagement time depends on the time method.
+
+In ANOVA test, a significant p-value indicates that some of the group means are different, but we don't know which pairs of groups are different.
+
+We performed multiple pairwise-comparison, to determine if the mean difference between specific pairs of group are statistically significant.
+
+Since we have time (2 levels), we can just do it with the pred (4 levels) variable. We used the general linear hypothesis test to compare the means between the groups. From the result, we can clearly see the difference between the pred - time pairs were all significant (p < 0.001).
+```{r table 2 anova pt 2}
+group_by(gold_no_na, pred) %>%
+  summarise(count = n(),
+            mean = mean(engagement, na.rm = TRUE),
+            sd = sd(engagement, na.rm = TRUE))
+group_by(gold_no_na, time) %>%
+  summarise(count = n(),
+            mean = mean(engagement, na.rm = TRUE),
+            sd = sd(engagement, na.rm = TRUE))
+
+boxplot(engagement ~ pred,data=gold_no_na,
+        col=c("#00AFBB", "#E7B800", "#FC4E07","#E7B800"))
+
+boxplot(engagement ~ time,data=gold_no_na,
+        col=c("#00AFBB", "#E7B800"))
+
+boxplot(engagement ~ pred * time, data=gold_no_na, frame = FALSE, 
+        col = c("#00AFBB", "#E7B800"), ylab="Engagement Time")
+
+ggplot(gold_no_na, aes(x = pred, y = engagement, colour = time)) +
+  stat_summary(fun.y = mean, geom = "point") +
+  stat_summary(fun.y = mean, geom = "line", aes(group = time))+
+  stat_summary(fun.data = mean_cl_boot, geom = "errorbar", width=0.2) +
+  labs(x = "Activities", y = "Engagement time", colour = "Time") +
+  theme_bw() 
+
+anov_mod <- lm(engagement ~ pred*time, data = gold_no_na)
+summary(anov_mod)
+Anova(anov_mod,type=c("II"))
+
+pairwise.t.test(gold_no_na$engagement,gold_no_na$pred, p.adjust.method="BH", pool.sd=F)
+pairwise.t.test(gold_no_na$engagement,gold_no_na$time, p.adjust.method="BH", pool.sd=F)
+
+gold_no_na$tw <- with(gold_no_na, interaction(pred, time))
+cell <- lm(engagement ~ tw - 1, data = gold_no_na)
+val.glht <- (glht(cell, linfct = mcp(tw = "Tukey")))
+summary(val.glht)
+```
+
+
+#Extension Report:
+
+__Our question:__  
+How does engagement time for each activity, on both the weekend and the weekday, vary between those who lived in the deprived local area and the rest of the area? Postal code data was used to identify whether the partcipants lived in the deprived area or not.
+
+__Our exploratory plot:__  
+This figure plots the digital screen time for all the four activities - playing games, watching tv, using computers, using smartphones - grouped by the deprived factor. We used the dplyr::summarise function to find the mean of the engagement hours and calculated the error values for a 95% confidence interval. 
+
+Using ggplot from the ggplot2 package, we plotted engagement time vs. pred (watching TV; playing games; using computers; using smartphones) grouping the data by deprived factor, and used the facet wrap command to create subplots for each activity type. The error bars are also included. 
+```{r ext report plot, echo = FALSE}
+ext_summary <- gold_no_na %>%
+  group_by(deprived, pred, time) %>%
+  summarise(avg_engagement = mean(engagement),
+            error = qt(0.975, df = n()-1)*sd(engagement)/sqrt(n()))
+ext_summary$deprived <- as.factor(ext_summary$deprived)
+levels(ext_summary$deprived) <- c("Not deprived", "Deprived")
+levels(ext_summary$time) <- c("Weekday", "Weekend")
+levels(ext_summary$pred) <- c("Using \nComputers", "Gaming", "Using \nSmartphones", "Watching")
+ext_summary$pred <- factor(ext_summary$pred, levels = c("Watching", "Gaming", "Using \nComputers", "Using \nSmartphones"))
+
+ggplot(ext_summary, aes(x = pred,
+                          y = avg_engagement,
+                          group = deprived,
+                          fill = as.factor(deprived))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~time) +
+  ylab("Daily Digital-Screen Engagement (hr)") +
+  xlab("Activity") +
+  ylim(0, 5) +
+  guides(fill=guide_legend(title=NULL)) +
+  geom_errorbar(aes(ymin = avg_engagement-error,
+                    ymax = avg_engagement+error),
+                    position = position_dodge(0.9),
+                    width = .25)
+```
+
+Below is our t-test analysis for all four activities - watching, playing, using computers, using smartphones - on both weekday and weekend comparing those who were coded as deprived or not deprived.
+```{r ext report t-tests}
+#Watching TV programs during weekdays for two groups, male and female
+deprived_watch_we<-filter(gold_no_na, deprived==1 & pred=="watch" & time=="we")
+ndeprived_watch_we<-filter(gold_no_na, deprived==0 & pred=="watch" & time=="we")
+t.test(deprived_watch_we$engagement,ndeprived_watch_we$engagement, var.equal= TRUE)
+
+#Watching TV programs during weekends for two groups, male and female
+deprived_watch_wd<-filter(gold_no_na, deprived==1 & pred=="watch" & time=="wd")
+ndeprived_watch_wd<-filter(gold_no_na, deprived==0 & pred=="watch" & time=="wd")
+t.test(deprived_watch_wd$engagement,ndeprived_watch_wd$engagement, var.equal= TRUE)
+
+#Playing console games during weekdays for two groups, male and female
+deprived_play_we<-filter(gold_no_na, deprived==1 & pred=="play"&time=="we")
+ndeprived_play_we<-filter(gold_no_na, deprived==0 & pred=="play"& time=="we")
+t.test(deprived_play_we$engagement,ndeprived_play_we$engagement, var.equal= TRUE)
+
+#Playing console games during weekends for two groups, male and female
+deprived_play_wd<-filter(gold_no_na, deprived==1 & pred=="play"&time=="wd")
+ndeprived_play_wd<-filter(gold_no_na, deprived==0 & pred=="play"& time=="wd")
+t.test(deprived_play_wd$engagement,ndeprived_play_wd$engagement, var.equal= TRUE)
+
+#Using Computers during weekdays for two groups, male and female
+deprived_comp_we<-filter(gold_no_na, deprived==1 & pred=="comp"&time=="we")
+ndeprived_comp_we<-filter(gold_no_na, deprived==0 & pred=="comp"& time=="we")
+t.test(deprived_comp_we$engagement,ndeprived_comp_we$engagement, var.equal= TRUE)
+
+#Using Computers during weekends for two groups, male and female
+deprived_comp_wd<-filter(gold_no_na, deprived==1 & pred=="comp"&time=="wd")
+ndeprived_comp_wd<-filter(gold_no_na, deprived==0 & pred=="comp"& time=="wd")
+t.test(deprived_comp_wd$engagement,ndeprived_comp_wd$engagement, var.equal= TRUE)
+
+#Using Smartphones during weekdays for two groups, male and female
+deprived_sp_we<-filter(gold_no_na, deprived==1 & pred=="sp" & time=="we")
+ndeprived_sp_we<-filter(gold_no_na, deprived==0 & pred=="sp"& time=="we")
+t.test(deprived_sp_we$engagement,ndeprived_sp_we$engagement, var.equal= TRUE)
+
+
+#Using Smartphones during weekends for two groups, male and female
+deprived_sp_wd<-filter(gold_no_na, deprived==1 & pred=="sp" & time=="wd")
+ndeprived_sp_wd<-filter(gold_no_na, deprived==0 & pred=="sp"& time=="wd")
+t.test(deprived_sp_wd$engagement,ndeprived_sp_wd$engagement, var.equal= TRUE)
+```
+
+__Additional Analysis:__  
+We wanted to see if the deprived factor influenced the engagement time for all the four activities. By looking at only the means of the individual factors, neither of them appear to have any effect on the response variable.
+
+A common method for analyzing the effect of categorical variables on a continuous response variable is the Analysis of Variance, or ANOVA. We can  fit a linear model to these data using the lm function. By looking at the table of coefficients, we can tell everything is significant. This just means the coefficients are significantly different from 0.
+
+Running an ANOVA on these data reveal a significant interaction, and we also notice the main effects are significant as well. This just means the effects of deprived and pred individually explain a fair amount of variability in the data. 
+
+From the ANOVA results, we can conclude the following, based on the p-values and a significance level of 0.05:
+* The p-value of pred is p< 2e-16  (significant), which indicates that the levels of pred are associated with significant different engagement time.
+* The p-value of deprived is p < 2e-16 (significant), which indicates that the levels of deprived are associated with significant different engagement time.
+* The p-value for the interaction between pred*deprived is p < 2e-16  (significant), which indicates that the relationships between pred and engagement time depends on the deprived factor.
+
+In the ANOVA test, a significant p-value indicates that some of the group means are different, but it does not tell us which pairs of groups are different. We performed multiple pairwise-comparison to determine if the mean differences between specific pairs of group are statistically significant.
+
+Since we are looking at deprived (2 levels), we can just do it with the pred (4 levels) variable. We used the general linear hypothesis test to compare the means between the groups. From the result, we can clearly see that the difference between the pred - deprived pairs were all significant (p < 0.001). 
+
+
+```{r ext report anova}
+group_by(gold_no_na, pred) %>%
+  summarise(count = n(),
+            mean = mean(engagement, na.rm = TRUE),
+            sd = sd(engagement, na.rm = TRUE))
+
+group_by(gold_no_na, deprived) %>%
+  summarise(count = n(),
+            mean = mean(engagement, na.rm = TRUE),
+            sd = sd(engagement, na.rm = TRUE))
+
+boxplot(engagement ~ pred,data=gold_no_na,
+        col=c("#00AFBB", "#E7B800", "#FC4E07","#E7B800"))
+
+boxplot(engagement ~ deprived,data=gold_no_na,
+        col=c("#00AFBB", "#E7B800"))
+
+boxplot(engagement ~ pred * deprived, data=gold_no_na, frame = FALSE, 
+        col = c("#00AFBB", "#E7B800"), ylab="Engagement Time")
+
+ggplot(gold_no_na, aes(x = pred, y = engagement, colour = deprived)) +
+  stat_summary(fun.y = mean, geom = "point") +
+  stat_summary(fun.y = mean, geom = "line", aes(group = deprived)) +
+  stat_summary(fun.data = mean_cl_boot, geom = "errorbar", width = 0.2) +
+  labs(x = "Activities", y = "Engagement time", colour = "Deprived") +
+  theme_bw() 
+
+anov_mod <- lm(engagement ~ pred*deprived, data = gold_no_na)
+summary(anov_mod)
+Anova(anov_mod,type=c("II"))
+
+gold_no_na$tw <- with(gold_no_na, interaction(pred, deprived))
+cell <- lm(engagement ~ tw - 1, data = gold_no_na)
+val.glht <- (glht(cell, linfct = mcp(tw = "Tukey")))
+summary(val.glht)
+```
+
+
+

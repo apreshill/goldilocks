@@ -1,0 +1,25 @@
+P1: Data Quality Review
+
+1) Values are missing
+There are a lot of “NA” values in the data set. I looked at an example of the survey used and certain responses to questions result in skipping a few of the following questions, which could explain this. Also some of the “NA” values could be from participants opting not to answer certain questions. I can’t find anything in the text explaining this specifically though.
+
+8) Units are not specified
+It is unclear if the values in certain columns are hours, days, etc. It might be necessary to look through the data and writing more closely to determine what units are being used.
+
+10) Field names are ambiguous
+Some of the column names are very ambiguous at first glance. Their meanings will probably become more clear with more in-depth reading of the analysis.
+
+18) Text has been converted to numbers
+One of the variables stores the zip code of the participants who took part in the survey. So removing the zeros would render the variable irrelevant 
+
+24) Data were entered by humans
+The participants were asked to enter the amount of time they spend watching the gadgets on weekdays and weekends. Have to check in the survey if they were asked to enter the time frame in hours or minutes
+
+26) Aggregations were computed on missing values
+For example, to compute the screen time the participants spent on weekends, we have to calculate the aggregate values of time spent on TV, Smart Phones, Playing games, etc. These values are missing on the excel.
+
+41) Results have been p-hacked
+The word P-Hack refers to :”Simonsohn of the University of Pennsylvania and his colleagues have popularized the term P-hacking; it is also known as data-dredging, snooping, fishing, significance-chasing and double-dipping. 'P-hacking,' says Simonsohn, 'is trying multiple things until you get the desired result' — even unconsciously. “ It’s hard to say without direct self experimenting with the data.
+
+43) Too good to be true
+There is no global measure to confirm this but1)The Sample size is large enough(120,115 participants ) to accept findings 2) In Analytic strategy they mentioned their findings are consistent with previous findings which means the reported data is reasonable.
