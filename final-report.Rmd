@@ -59,7 +59,8 @@ fig_1_summary <- gold_no_na %>%
             error = qt(0.975, df = n()-1)*sd(mwbi)/sqrt(n()))
 levels(fig_1_summary$time) <- c("Weekday", "Weekend")
 levels(fig_1_summary$pred) <- c("Using Computers", "Gaming", "Using Smartphones", "Watching")
-fig_1_summary$pred <- factor(fig_1_summary$pred, levels = c("Watching", "Gaming", "Using Computers", "Using Smartphones"))
+fig_1_summary$pred <- factor(fig_1_summary$pred, 
+                      levels = c("Watching", "Gaming", "Using Computers", "Using Smartphones"))
 ggplot(fig_1_summary, aes(x = engagement,
                           y = avg_mwbi,
                           group = time,
@@ -90,7 +91,8 @@ fig_2_summary$male <- as.factor(fig_2_summary$male)
 levels(fig_2_summary$male) <- c("Female", "Male")
 levels(fig_2_summary$time) <- c("Weekday", "Weekend")
 levels(fig_2_summary$pred) <- c("Using \nComputers", "Gaming", "Using \nSmartphones", "Watching")
-fig_2_summary$pred <- factor(fig_2_summary$pred, levels = c("Watching", "Gaming", "Using \nComputers", "Using \nSmartphones"))
+fig_2_summary$pred <- factor(fig_2_summary$pred, 
+                      levels = c("Watching", "Gaming", "Using \nComputers", "Using \nSmartphones"))
 ggplot(fig_2_summary, aes(x = pred,
                           y = avg_engagement,
                           group = male,
@@ -217,7 +219,11 @@ for(pred_var in list_pred){
     male_lm<- filter(gold_subset, male==1)
     female_lm<- filter(gold_subset, male==0)
     tval<-t.test(male_lm$engagement,female_lm$engagement)
-    tess <- tes(tval$statistic, as.double(n_distinct(male_lm)), as.double(n_distinct(female_lm)), level = 95, cer = 0.2, dig = 2, verbose = FALSE, id=NULL, data=NULL)
+    tess <- tes(tval$statistic, 
+                as.double(n_distinct(male_lm)), 
+                as.double(n_distinct(female_lm)), 
+                level = 95, cer = 0.2, dig = 2, 
+                verbose = FALSE, id=NULL, data=NULL)
     cohens_lm = tess[4]
     cohens_lm = abs(cohens_lm$d)
     cohens_lm = round(cohens_lm, digits = 3)
@@ -245,7 +251,10 @@ for(pred_var in list_pred){
       filter(male == 0) %>% 
       mutate(engagement_2 = engagement^2)
     tval<-t.test(male_lm$engagement_2,female_lm$engagement_2)
-    tess<-tes(tval$statistic, as.double(n_distinct(male_lm)), as.double(n_distinct(female_lm)), level = 95, cer = 0.2, dig = 2,       verbose = FALSE, id=NULL, data=NULL)
+    tess<-tes(tval$statistic, as.double(n_distinct(male_lm)), 
+              as.double(n_distinct(female_lm)), 
+              level = 95, cer = 0.2, dig = 2,       
+              verbose = FALSE, id=NULL, data=NULL)
     cohens_qd = tess[4]
     cohens_qd= abs(cohens_qd$d)
     quadratic_values <- c("Quadratic", slope_qd, std_err_qd, 
@@ -310,7 +319,10 @@ for (pred_var in list_pred){
     male_lm<- filter(gold_subset, male==1)
     female_lm<- filter(gold_subset, male==0)
     tval<-t.test(male_lm$engagement,female_lm$engagement)
-    tess <- tes(tval$statistic, as.double(n_distinct(male_lm)), as.double(n_distinct(female_lm)), level = 95, cer = 0.2, dig = 2, verbose = FALSE, id=NULL, data=NULL)
+    tess <- tes(tval$statistic, as.double(n_distinct(male_lm)), 
+                as.double(n_distinct(female_lm)), 
+                level = 95, cer = 0.2, dig = 2, 
+                verbose = FALSE, id=NULL, data=NULL)
     cohens_lm = tess[4]
     cohens_lm = abs(cohens_lm$d)
     cohens_lm = round(cohens_lm, digits = 3)
@@ -342,7 +354,10 @@ for (pred_var in list_pred){
       filter(male == 0) %>% 
       mutate(engagement_2 = engagement^2)
     tval<-t.test(male_lm$engagement_2,female_lm$engagement_2)
-    tess<-tes(tval$statistic, as.double(n_distinct(male_lm)), as.double(n_distinct(female_lm)), level = 95, cer = 0.2, dig = 2,       verbose = FALSE, id=NULL, data=NULL)
+    tess<-tes(tval$statistic, as.double(n_distinct(male_lm)), 
+              as.double(n_distinct(female_lm)), 
+              level = 95, cer = 0.2, dig = 2,       
+              verbose = FALSE, id=NULL, data=NULL)
     cohens_qd = tess[4]
     cohens_qd= abs(cohens_qd$d)
     quadratic_values <- c("Quadratic", slope_qd, std_err_qd, 
@@ -444,7 +459,8 @@ ext_summary$deprived <- as.factor(ext_summary$deprived)
 levels(ext_summary$deprived) <- c("Not deprived", "Deprived")
 levels(ext_summary$time) <- c("Weekday", "Weekend")
 levels(ext_summary$pred) <- c("Using \nComputers", "Gaming", "Using \nSmartphones", "Watching")
-ext_summary$pred <- factor(ext_summary$pred, levels = c("Watching", "Gaming", "Using \nComputers", "Using \nSmartphones"))
+ext_summary$pred <- factor(ext_summary$pred, 
+                           levels = c("Watching", "Gaming", "Using \nComputers", "Using \nSmartphones"))
 
 ggplot(ext_summary, aes(x = pred,
                           y = avg_engagement,
